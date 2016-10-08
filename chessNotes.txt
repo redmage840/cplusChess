@@ -1,0 +1,4 @@
+chess notes again
+rename from moveTable to something better
+change findAllThreats to use set instead of list
+memoized the awkward loops from 11,12...18,21,22...88
