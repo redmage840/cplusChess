@@ -1,0 +1,247 @@
+# Chess Wizard
+# Python3 Chess Game
+
+'''
+Games ending in mate-in-n
+Here we consider games at ply p that lead to a position that is mate-in-n moves (assuming perfect play). We also consider games where the player on the move is losing under perfect play. Both of these are only possible if one of the players made a game-losing blunder in the opening. The goal is to obtain a depth-to-mate (DTM) analysis of chess openings similar to endgame tablebases. Numbers for "lose-in-0" are the same as the number of games ending in checkmate from the first table of this page.
+
+The number of games ending in win-in-n at ply p is similar to the number of games ending in lose-in-(n-1) at ply p+1. For example, at ply 5 there are 10822 games leading to a win-in-1. Among them, 6 games (such as 1.f3 e6 2.g4 Bd6 3.h3) lead to a win-in-1 with two keys (two mating moves). This gives a total of 10828 games ending in lose-in-0 at ply 6. Click on a number in the table below to access a file with the games. I thank Serge Zhemeytsev for the idea of computing these numbers.
+
+Number of games ending in mate-in-n (Percent)
+ 	win in (mate in)...	lose in (mated in)...
+ 	1 move	2 moves	3 moves	4 moves	5 moves	0 moves	1 move	2 moves	3 moves	4 moves
+ply 0	0	0	0	0	0	0	0	0	0	0
+ply 1	0	0	0	0	0	0	0	0	0	0
+ply 2	0	0	0	0	0	0	0	0	0	0
+ply 3	8	8	0	0	0	0	0	0	0	0
+ply 4	347	303	25	0	0	8	8	0	0	0
+ply 5	10822	7891	540	18	14	347	315	25	0	0
+ply 6	419046	247827	29087	1403		10828	8212	547	19	
+ply 7	9581293	4898320	615559			435767	269465	30882	1659	
+ply 8	377316151	153916676				9852036	5324016	665748		
+ply 9	8391307628	3105258919				400191963	175265641			
+ply 10	339181405568					8790619155	3520797365			
+ply 11						362290010907				
+ply 12						8361091858959				
+ply 13						346742245764219				
+
+'''
+
+'''
+Endgame frequency table
+
+Percent
+
+White Pieces
+
+Black Pieces
+
+8.45	rook	rook
+6.76	rook & bishop	rook & knight
+3.45	two rooks	two rooks
+3.37	rook & bishop	rook & bishop (same color)
+3.29	bishop	knight
+3.09	rook & knight	rook & knight
+2.87	king & pawns	king (and pawns)
+1.92	rook & bishop	rook & bishop (opposite color)
+1.87	queen	queen
+1.77	rook & bishop	rook
+1.65	bishop	bishop (same color)
+1.56	knight	knight
+1.51	rook	bishop
+1.42	rook & knight	rook
+1.11	bishop	bishop (opposite color)
+1.01	bishop	pawns
+0.97	rook	knight
+0.92	knight	pawns
+0.90	queen & minor piece	queen
+0.81	rook	two minor pieces
+0.75	rook	pawns
+0.69	queen	rook & minor piece
+0.67	rook & pawn	rook
+0.56	rook & two pawns	rook
+0.42	queen	pawns
+0.40	queen	rook
+0.31	queen	two rooks
+0.23	king & one pawn	king
+0.17	queen	minor piece
+0.09	queen & one pawn	queen
+0.08	queen	two minor pieces
+0.02	bishop & knight	king
+0.01	queen	three minor pieces
+'''
+
+'''
+
+A	White configuration
+B	Black configuration
+C	Number of white pieces
+D	Number of black pieces
+E	Percentage of positions white to move wins
+F	Percentage of positions white to move draws
+G	Percentage of positions white to move loses
+H	Longest mate for white to move
+I	Percentage of positions black to move wins
+J	Percentage of positions black to move draws
+K	Percentage of positions black to move loses
+L	Longest mate for black to move
+M	Percentage of positions white wins (no matter who moves first)
+N	Percentage of positions white draws (no matter who moves first)
+O	Percentage of positions white loses (no matter who moves first)
+P	Number of mutual zugzwang positions
+Q	Number of mutual zugzwang positions in which white to move draws and black to move loses
+R	Number of mutual zugzwang positions in which black to move draws and white to move loses
+S	Number of mutual zugzwang positions in which whoever moves first loses
+T	Occurrence of this endgame in games per million
+Table
+A	B	C	D	E	F	G	H	I	J	K	L	M	N	O	P	Q	R	S	T
+KQ	K	2	1	100.0	0.0	0.0	10	0.0	10.3	89.7	-	94.9	5.2	0.0	0	0	0	0	257
+KR	K	2	1	100.0	0.0	0.0	16	0.0	9.9	90.1	-	95.1	5.0	0.0	0	0	0	0	542
+KB	K	2	1	0.0	100.0	0.0	-	0.0	100.0	0.0	-	0.0	100.0	0.0	0	0	0	0	194
+KN	K	2	1	0.0	100.0	0.0	-	0.0	100.0	0.0	-	0.0	100.0	0.0	0	0	0	0	224
+KP	K	2	1	76.5	23.5	0.0	28	0.0	41.9	58.1	-	67.3	32.7	0.0	80	80	0	0	2352
+KQ	KQ	2	2	41.7	57.8	0.5	13	41.7	57.8	0.5	13	21.1	57.8	21.1	0	0	0	0	222
+KQ	KR	2	2	99.0	0.8	0.2	35	28.7	5.8	65.5	19	82.3	3.3	14.5	0	0	0	0	400
+KQ	KB	2	2	99.7	0.3	0.0	17	0.0	23.1	76.9	-	88.3	11.7	0.0	0	0	0	0	25
+KQ	KN	2	2	99.3	0.7	0.0	21	0.0	19.5	80.5	-	89.9	10.1	0.0	0	0	0	0	74
+KQ	KP	2	2	99.4	0.6	0.0	28	7.7	12.1	80.2	29	89.8	6.4	3.9	0	0	0	0	937
+KR	KR	2	2	29.1	70.2	0.7	19	29.1	70.2	0.7	19	14.9	70.2	14.9	0	0	0	0	423
+KR	KB	2	2	35.2	64.8	0.0	29	0.0	96.8	3.2	-	19.2	80.8	0.0	5	5	0	0	322
+KR	KN	2	2	48.4	51.6	0.0	40	0.0	89.0	11.0	1	29.7	70.3	0.0	18	18	0	0	397
+KR	KP	2	2	91.4	8.4	0.2	26	16.4	17.5	66.1	43	78.8	13.0	8.3	12	12	0	0	2146
+KB	KB	2	2	0.0	100.0	0.0	1	0.0	100.0	0.0	1	0.0	100.0	0.0	0	0	0	0	49
+KB	KN	2	2	0.0	100.0	0.0	1	0.0	100.0	0.0	1	0.0	100.0	0.0	0	0	0	0	87
+KB	KP	2	2	43.4	33.3	23.2	33	43.4	33.3	23.2	33	33.3	33.3	33.3	1	0	1	0	387
+KN	KN	2	2	0.0	100.0	0.0	1	0.0	100.0	0.0	1	0.0	100.0	0.0	0	0	0	0	68
+KN	KP	2	2	0.0	87.1	12.9	7	32.6	67.4	0.0	29	0.0	77.3	22.8	29	22	7	0	497
+KP	KP	2	2	43.4	33.3	23.2	33	43.4	33.3	23.2	33	33.3	33.3	33.3	121	106	106	15	2810
+KQQ	K	3	1	100.0	0.0	0.0	40	0.0	2.1	97.9	-	99.0	1.1	0.0	0	0	0	0	13
+KQR	K	3	1	100.0	0.0	0.0	6	0.0	1.1	98.9	-	99.5	0.6	0.0	0	0	0	0	18
+KQB	K	3	1	100.0	0.0	0.0	8	0.0	9.4	90.6	-	95.3	4.7	0.0	0	0	0	0	36
+KQN	K	3	1	100.0	0.0	0.0	9	0.0	9.7	90.3	-	95.2	4.9	0.0	0	0	0	0	41
+KQP	K	3	1	100.0	0.0	0.0	10	0.0	2.8	97.2	-	98.6	1.4	0.0	0	0	0	0	156
+KRR	K	3	1	100.0	0.0	0.0	7	0.0	0.3	99.7	-	99.9	0.2	0.0	0	0	0	0	8
+KRB	K	3	1	100.0	0.0	0.0	16	0.0	8.8	91.2	-	95.6	4.4	0.0	0	0	0	0	46
+KRN	K	3	1	100.0	0.0	0.0	16	0.0	9.2	90.8	-	95.4	4.6	0.0	0	0	0	0	15
+KRP	K	3	1	100.0	0.0	0.0	16	0.0	2.5	97.5	-	98.8	1.3	0.0	0	0	0	0	333
+KBB	K	3	1	49.3	50.7	0.0	19	0.0	58.8	41.2	-	45.3	54.8	0.0	0	0	0	0	31
+KBN	K	3	1	99.5	0.5	0.0	33	0.0	18.1	81.9	-	90.7	9.3	0.0	0	0	0	0	206
+KBP	K	3	1	96.0	4.0	0.0	31	0.0	16.8	83.2	-	89.6	10.4	0.0	0	0	0	0	453
+KNN	K	3	1	0.0	100.0	0.0	1	0.0	100.0	0.0	-	0.0	100.0	0.0	0	0	0	0	20
+KNP	K	3	1	96.3	3.7	0.0	27	0.0	18.5	81.5	-	88.9	11.1	0.0	75	75	0	0	426
+KPP	K	3	1	98.4	1.6	0.0	32	0.0	7.9	92.1	-	95.3	4.8	0.0	43	43	0	0	563
+KQQ	KQ	3	2	99.1	0.8	0.1	30	0.6	32.8	66.6	13	82.9	16.8	0.4	0	0	0	0	51
+KQQ	KR	3	2	100.0	0.0	0.0	35	0.1	0.2	99.7	19	99.9	0.1	0.1	0	0	0	0	0
+KQQ	KB	3	2	100.0	0.0	0.0	15	0.0	0.1	99.9	-	100.0	0.1	0.0	0	0	0	0	0
+KQQ	KN	3	2	100.0	0.0	0.0	19	0.0	0.1	99.9	-	100.0	0.1	0.0	0	0	0	0	0
+KQQ	KP	3	2	100.0	0.0	0.0	22	0.0	0.7	99.3	13	99.7	0.4	0.0	0	0	0	0	7
+KQR	KQ	3	2	97.0	2.8	0.2	67	24.4	21.2	54.4	38	75.7	12.0	12.3	1	1	0	0	36
+KQR	KR	3	2	99.8	0.1	0.0	34	0.3	17.1	82.1	20	91.0	8.6	0.2	0	0	0	0	132
+KQR	KB	3	2	100.0	0.0	0.0	29	0.0	11.6	88.4	-	94.2	5.8	0.0	0	0	0	0	12
+KQR	KN	3	2	99.9	0.1	0.0	1	0.0	7.7	92.3	1	96.1	3.9	0.0	0	0	0	0	2
+KQR	KP	3	2	100.0	0.0	0.0	40	0.3	1.4	98.3	43	99.2	0.7	0.2	0	0	0	0	25
+KQB	KQ	3	2	55.7	44.0	0.3	33	30.5	62.3	7.2	24	31.5	53.2	15.4	25	25	0	0	28
+KQB	KR	3	2	99.3	0.6	0.0	40	0.7	27.5	71.8	30	85.6	14.1	0.4	0	0	0	0	21
+KQB	KB	3	2	99.7	0.3	0.0	17	0.0	19.8	80.2	2	90.0	10.1	0.0	0	0	0	0	2
+KQB	KN	3	2	99.5	0.5	0.0	21	0.0	16.7	83.3	1	91.4	8.6	0.0	0	0	0	0	2
+KQB	KP	3	2	100.0	0.0	0.0	32	1.0	14.1	84.9	24	92.5	7.1	0.5	0	0	0	0	25
+KQN	KQ	3	2	50.1	49.6	0.3	41	33.5	62.2	4.3	24	27.2	55.9	16.9	38	38	0	0	74
+KQN	KR	3	2	99.2	0.7	0.0	38	3.0	27.2	69.8	41	84.5	14.0	1.5	0	0	0	0	12
+KQN	KB	3	2	99.8	0.2	0.0	17	0.0	20.9	79.1	1	89.5	10.6	0.0	0	0	0	0	7
+KQN	KN	3	2	99.4	0.6	0.0	21	0.0	17.8	82.2	1	90.8	9.2	0.0	0	0	0	0	13
+KQN	KP	3	2	99.9	0.1	0.0	30	1.9	15.0	83.1	29	91.5	7.6	1.0	0	0	0	0	46
+KQP	KQ	3	2	68.4	31.2	0.4	124	35.2	51.2	13.6	29	41.0	41.2	17.8	640	640	0	0	1179
+KQP	KR	3	2	99.6	0.3	0.1	38	19.7	6.1	74.1	33	86.9	3.2	9.9	1	1	0	0	216
+KQP	KB	3	2	99.9	0.1	0.0	28	0.0	16.7	83.3	2	91.6	8.4	0.0	0	0	0	0	16
+KQP	KN	3	2	99.7	0.3	0.0	30	0.0	12.5	87.5	8	93.6	6.4	0.0	0	0	0	0	41
+KQP	KP	3	2	100.0	0.0	0.0	105	3.3	7.3	89.4	34	94.7	3.7	1.7	0	0	0	0	622
+KRR	KQ	3	2	58.2	36.8	5.1	29	52.0	37.0	11.0	49	34.6	36.9	28.6	10	10	0	0	8
+KRR	KR	3	2	99.2	0.7	0.0	31	0.4	33.4	66.2	20	82.7	17.1	0.2	0	0	0	0	38
+KRR	KB	3	2	99.3	0.7	0.0	29	0.0	22.4	77.6	-	88.5	11.6	0.0	1	1	0	0	8
+KRR	KN	3	2	99.7	0.3	0.0	40	0.0	15.0	85.0	1	92.4	7.7	0.0	0	0	0	0	8
+KRR	KP	3	2	100.0	0.0	0.0	33	1.0	5.7	93.3	50	96.7	2.9	0.5	0	0	0	0	3
+KRB	KQ	3	2	38.7	48.0	13.4	21	71.2	25.6	3.2	70	21.0	36.8	42.3	372	372	0	0	23
+KRB	KR	3	2	41.3	58.7	0.0	65	0.8	94.1	5.1	30	23.2	76.4	0.4	17	17	0	0	649
+KRB	KB	3	2	98.2	1.8	0.0	30	0.0	31.1	68.9	2	83.6	16.5	0.0	0	0	0	0	20
+KRB	KN	3	2	98.9	1.1	0.0	40	0.0	24.0	76.0	1	87.5	12.6	0.0	0	0	0	0	5
+KRB	KP	3	2	99.1	0.9	0.0	28	2.4	17.1	80.5	70	89.8	9.0	1.2	1	1	0	0	33
+KRN	KQ	3	2	35.4	41.1	23.4	20	78.2	19.7	2.1	69	18.8	30.4	50.8	455	0	455	0	15
+KRN	KR	3	2	36.7	63.3	0.1	37	3.2	93.6	3.2	41	20.0	78.5	1.7	10	10	0	0	430
+KRN	KB	3	2	97.7	2.3	0.0	31	0.0	32.4	67.6	1	82.7	17.4	0.0	0	0	0	0	7
+KRN	KN	3	2	99.0	1.0	0.0	37	0.0	24.6	75.4	1	87.2	12.8	0.0	3	3	0	0	12
+KRN	KP	3	2	98.5	1.5	0.0	29	4.5	17.1	78.4	68	88.5	9.3	2.3	0	0	0	0	32
+KRP	KQ	3	2	37.7	11.8	50.5	68	91.0	7.1	1.8	104	19.8	9.5	70.8	243	2	241	0	367
+KRP	KR	3	2	66.6	33.0	0.4	74	20.1	54.4	25.5	33	46.1	43.7	10.3	209	209	0	0	9184
+KRP	KB	3	2	96.4	3.6	0.0	73	0.0	32.6	67.4	2	81.9	18.1	0.0	225	225	0	0	626
+KRP	KN	3	2	97.5	2.5	0.0	54	0.0	24.7	75.3	8	86.4	13.6	0.0	413	413	0	0	397
+KRP	KP	3	2	99.4	0.4	0.3	56	10.0	6.6	83.5	103	91.5	3.5	5.2	3	0	2	1	1092
+KBB	KQ	3	2	15.3	20.2	64.5	21	96.5	2.9	0.6	81	8.0	11.6	80.5	1	0	1	0	3
+KBB	KR	3	2	16.5	83.4	0.1	23	1.3	97.2	1.5	31	9.0	90.3	0.7	3	3	0	0	13
+KBB	KB	3	2	15.6	84.3	0.0	22	0.0	98.6	1.4	2	8.5	91.5	0.0	0	0	0	0	35
+KBB	KN	3	2	48.2	51.8	0.0	78	0.0	66.1	33.9	1	41.1	59.0	0.0	1	1	0	0	28
+KBB	KP	3	2	48.0	50.2	1.8	74	11.4	54.1	34.5	83	41.3	52.2	6.6	1	1	0	0	23
+KBN	KQ	3	2	25.0	6.4	68.6	36	97.6	1.7	0.7	53	12.9	4.1	83.1	1	0	1	0	13
+KBN	KR	3	2	26.0	73.8	0.2	36	3.8	94.6	1.6	41	13.8	84.2	2.0	8	6	2	0	64
+KBN	KB	3	2	25.5	74.5	0.0	39	0.0	98.8	1.2	2	13.4	86.7	0.0	45	45	0	0	54
+KBN	KN	3	2	32.2	67.8	0.0	107	0.0	96.1	3.9	1	18.1	82.0	0.0	922	922	0	0	36
+KBN	KP	3	2	91.4	5.5	3.2	104	14.7	23.0	62.4	55	76.9	14.3	9.0	62	61	1	0	165
+KBP	KQ	3	2	21.3	11.5	67.2	35	96.8	2.8	0.4	50	10.9	7.2	82.0	16	0	16	0	117
+KBP	KR	3	2	30.9	67.3	1.8	45	23.4	73.1	3.5	39	17.2	70.2	12.6	306	4	302		451
+KBP	KB	3	2	41.3	58.7	0.0	51	0.0	86.9	13.1	3	27.2	72.8	0.0	160	160	0	0	570
+KBP	KN	3	2	53.7	46.3	0.0	105	0.0	76.4	23.6	8	38.7	61.4	0.0	2125	2112	13	0	497
+KBP	KP	3	2	86.4	9.5	4.1	67	16.7	24.1	59.2	51	72.8	16.8	10.4	406	403	2	1	1443
+KNN	KQ	3	2	0.0	42.8	57.1	1	94.0	6.0	0.0	72	0.0	24.4	75.6	229	0	229	0	5
+KNN	KR	3	2	0.0	99.6	0.4	3	6.3	93.7	0.0	41	0.0	96.7	3.4	25	0	25	0	15
+KNN	KB	3	2	0.0	100.0	0.0	4	0.0	100.0	0.0	1	0.0	100.0	0.0	0	0	0	0	2
+KNN	KN	3	2	0.1	99.9	0.0	7	0.0	100.0	0.0	1	0.1	100.0	0.0	362	362	0	0	8
+KNN	KP	3	2	31.3	66.4	2.3	115	12.8	73.6	13.6	74	22.5	70.0	7.6	3143	3124	19	0	71
+KNP	KQ	3	2	17.9	11.9	70.2	41	97.2	2.3	0.5	55	9.2	7.1	83.7	52	0	52	0	130
+KNP	KR	3	2	26.7	69.3	4.0	44	29.3	68.5	2.2	67	14.5	68.9	16.7	1181	23	1158	0	433
+KNP	KB	3	2	38.8	61.2	0.0	42	0.0	88.1	11.9	9	25.4	74.7	0.0	642	640	2	0	728
+KNP	KN	3	2	49.2	50.8	0.0	97	0.0	77.2	22.8	7	36.0	64.0	0.0	4191	4128	63	0	781
+KNP	KP	3	2	78.3	13.6	8.1	57	21.8	27.6	50.6	58	64.5	20.6	15.0	2303	2281	14	8	1410
+KPP	KQ	3	2	16.0	12.6	71.4	124	98.4	1.5	0.1	41	8.1	7.1	84.9	2	0	2	0	726
+KPP	KR	3	2	35.4	20.1	44.5	54	75.2	18.2	6.6	40	21.0	19.2	59.9	119	18	99	2	1652
+KPP	KB	3	2	54.4	45.6	0.0	43	0.0	75.4	24.6	4	39.5	60.5	0.0	212	211	1	0	519
+KPP	KN	3	2	64.7	35.3	0.0	50	0.0	62.4	37.6	17	51.2	48.9	0.0	1077	920	157	0	705
+KPP	KP	3	2	77.1	10.3	12.6	127	27.7	19.1	53.2	43	65.2	14.7	20.2	4237	4179	52	6	5080
+KQQQ	K	4	1	100.0	0.0	0.0	3	0.0	4.0	96.0	-	98.0	2.0	0.0	0	0	0	0	0
+KQQR	K	4	1	100.0	0.0	0.0	4	0.0	3.1	96.9	-	98.5	1.6	0.0	0	0	0	0	0
+KQQB	K	4	1	100.0	0.0	0.0	4	0.0	2.7	97.3	-	98.7	1.4	0.0	0	0	0	0	3
+KQQN	K	4	1	100.0	0.0	0.0	4	0.0	2.4	97.6	-	98.8	1.2	0.0	0	0	0	0	2
+KQQP	K	4	1	100.0	0.0	0.0	4	0.0	2.1	97.9	-	99.0	1.1	0.0	0	0	0	0	12
+KQRR	K	4	1	100.0	0.0	0.0	4	0.0	2.0	98.0	-	99.0	1.0	0.0	0	0	0	0	0
+KQRB	K	4	1	100.0	0.0	0.0	5	0.0	1.7	98.3	-	99.2	0.9	0.0	0	0	0	0	3
+KQRN	K	4	1	100.0	0.0	0.0	5	0.0	1.4	98.6	-	99.3	0.7	0.0	0	0	0	0	3
+KQRP	K	4	1	100.0	0.0	0.0	7	0.0	1.1	98.9	-	99.5	0.6	0.0	0	0	0	0	26
+KQBB	K	4	1	100.0	0.0	0.0	6	0.0	5.0	95.0	-	97.5	2.5	0.0	0	0	0	0	3
+KQBN	K	4	1	100.0	0.0	0.0	7	0.0	1.1	98.9	-	99.5	0.6	0.0	0	0	0	0	5
+KQBP	K	4	1	100.0	0.0	0.0	9	0.0	1.2	98.8	-	99.4	0.6	0.0	0	0	0	0	31
+KQNN	K	4	1	100.0	0.0	0.0	8	0.0	9.1	90.9	-	95.5	4.6	0.0	0	0	0	0	0
+KQNP	K	4	1	100.0	0.0	0.0	9	0.0	1.0	99.0	-	99.5	0.5	0.0	0	0	0	0	0
+KQPP	K	4	1	100.0	0.0	0.0	9	0.0	0.7	99.3	-	99.7	0.4	0.0	?	?	?	?	64
+KRRR	K	4	1	100.0	0.0	0.0	5	0.0	0.9	99.1	-	99.6	0.5	0.0	0	0	0	0	2
+KRRB	K	4	1	100.0	0.0	0.0	10	0.0	0.8	99.2	-	99.6	0.4	0.0	0	0	0	0	0
+KRRN	K	4	1	100.0	0.0	0.0	10	0.0	0.6	99.4	-	99.7	0.3	0.0	0	0	0	0	0
+KRRP	K	4	1	100.0	0.0	0.0	14	0.0	0.3	99.7	-	99.9	0.2	0.0	0	0	0	0	7
+KRBB	K	4	1	100.0	0.0	0.0	12	0.0	4.3	95.7	-	97.9	2.2	0.0	0	0	0	0	0
+KRBN	K	4	1	100.0	0.0	0.0	29	0.0	0.5	99.5	-	99.8	0.3	0.0	0	0	0	0	3
+KRBP	K	4	1	100.0	0.0	0.0	16	0.0	0.6	99.4	-	99.7	0.3	0.0	0	0	0	0	23
+KRNN	K	4	1	100.0	0.0	0.0	15	0.0	8.5	91.5	-	95.8	4.3	0.0	0	0	0	0	0
+KRNP	K	4	1	100.0	0.0	0.0	17	0.0	0.5	99.5	-	99.8	0.3	0.0	0	0	0	0	15
+KRPP	K	4	1	100.0	0.0	0.0	15	0.0	0.2	98.8	-	99.4	0.1	0.0	0	0	0	0	119
+KBBB	K	4	1	74.0	26.0	0.0	16	0.0	31.6	68.4	-	71.2	28.8	0.0	0	0	0	0	0
+KBBN	K	4	1	100.0	0.0	0.0	33	0.0	4.1	95.9	-	98.0	2.1	0.0	0	0	0	0	3
+KBBP	K	4	1	98.3	1.7	0.0	30	0.0	6.8	93.2	-	95.8	4.3	0.0	0	0	0	0	5
+KBNN	K	4	1	100.0	0.0	0.0	34	0.0	8.4	91.6	-	95.8	4.2	0.0	0	0	0	0	0
+KBNP	K	4	1	100.0	0.0	0.0	33	0.0	0.8	99.2	-	99.6	0.4	0.0	0	0	0	0	26
+KBPP	K	4	1	99.8	0.2	0.0	25	0.0	1.3	98.7	-	99.3	0.8	0.0	6	6	0	0	100
+KNNN	K	4	1	98.7	1.3	0.0	21	0.0	25.0	75.0	-	86.9	13.2	0.0	0	0	0	0	0
+KNNP	K	4	1	98.4	1.6	0.0	28	0.0	12.8	88.0	-	93.2	7.2	0.0	0	0	0	0	7
+KNPP	K	4	1	100.0	0.0	0.0	32	0.0	1.0	99.0	-	99.5	0.5	0.0	93	93	0	0	96
+KPPP	K	4	1	99.9	0.1	0.0	33	0.0	0.6	99.4	-	99.7	0.4	0.0	11	11	0	0	97
+'''
+
+'''
+Board representation typically does not include the status of the threefold repetition draw rule. To determine this rule, a complete history of the game from the last irreversible action (capture, pawn movement, or castling) needs to be maintained, and so, is generally tracked in separate data structures.
+'''

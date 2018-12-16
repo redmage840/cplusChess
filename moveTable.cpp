@@ -5,11 +5,25 @@
 #include<algorithm>
 #include<random>
 #include<ctime>
+#include <pybind11/pybind11.h>
+
+// allow for passing dicts
+#include <pybind11/stl.h>
+
+// is this used?
+namespace py = pybind11;
+
 using namespace std;
+
+// FUNCTIONS EXPOSED FOR USE WITH PYTHON
+
+// vector<pair<int,int>> findWhiteMoves(map<int,char> board)
+// vector<pair<int,int>> findBestBlackMove(map<int,char> board)
+
 
 int depthCounter = 0; // used in findBestWhiteMove()
 int myrand (int i) { return rand()%i;} // used in shuffleMoves()
-// key is xy coord, ie 11 is a1, 12 is a2...88 is h8   value is piece there, uppercase for white, e for empty
+
 map<int,char> board = {{11,'R'},{12,'P'},{13,'e'},{14,'e'},{15,'e'},{16,'e'},{17,'p'},{18,'r'},{21,'N'},{22,'P'},{23,'e'},{24,'e'},{25,'e'},{26,'e'},{27,'p'},{28,'n'},{31,'B'},{32,'P'},{33,'e'},{34,'e'},{35,'e'},{36,'e'},{37,'p'},{38,'b'},{41,'Q'},{42,'P'},{43,'e'},{44,'e'},{45,'e'},{46,'e'},{47,'p'},{48,'q'},{51,'K'},{52,'P'},{53,'e'},{54,'e'},{55,'e'},{56,'e'},{57,'p'},{58,'k'},{61,'B'},{62,'P'},{63,'e'},{64,'e'},{65,'e'},{66,'e'},{67,'p'},{68,'b'},{71,'N'},{72,'P'},{73,'e'},{74,'e'},{75,'e'},{76,'e'},{77,'p'},{78,'n'},{81,'R'},{82,'P'},{83,'e'},{84,'e'},{85,'e'},{86,'e'},{87,'p'},{88,'r'}};
 
 char getColor(char piece){
@@ -371,20 +385,40 @@ pair<int,int> findBestWhiteMove(map<int,char> &board){
     return bestMove;
 }
 
+// need to find reasonable move chains
+// start with all available moves as first elems of lists
+// precede each list with initial board state
+// for each list, for each response move, create a new list of the top performing (board eval) responses
+// so for each response there is a new list with the 'first move' preceding,
+
 
 // for each exchange of whiteMove and blackMove, add material gained in whiteMove, 
 //   subtract amount of material lost on blackMove, going N moves deep...
 // Should only use findBestWhiteMove, since it calls findBestBlackMove...
-pair<int,int> deepWhite(map<int,char> &board){}
+// pair<int,int> deepWhite(map<int,char> &board){}
 
 
+PYBIND11_MODULE(moveTable, m) {
+    m.doc() = "pybind11 example plugin"; // optional module docstring
 
+    m.def("findWhiteMoves", &findWhiteMoves, "takes a map<int,char>, returns vector<pair<int,int>>");
+    
+    m.def("findBlackMoves", &findBlackMoves, "takes a map<int,char>, returns vector<pair<int,int>>");
+    
+   // m.def("movePiece", &movePiece, py::return_value_policy::reference, "blah");
+   
+   m.def("findBestWhiteMove", &findBestWhiteMove, "takes a board map, returns pair");
+}
 
 
 int main(){
     srand ( time(0) );// rand seed
     
-    
+    // c++11 supports auto, everything compiled as if python3 and c++11 with g++/clang osx
+    vector<pair<int,int>> x = findWhiteMoves(board);
+    for (auto p : x) {
+        cout<<p.first<<" "<<p.second<<endl;
+    }
     // this test shows that more valuable moves are preferred, at least immediate material
     // moves with equal material value are chosen randomly
     movePiece(board,27,23);//move black B pawn to b3
@@ -394,18 +428,4 @@ int main(){
     movePiece(board,wmove.first,wmove.second);
     pair<int,int> bmove = findBestBlackMove(board);
     cout<<bmove.first<<" "<<bmove.second<<endl;
-
-  
-  
-// Tests findWhiteMoves(), findBlackMoves(), They   
-  //   vector<pair<int,int>> bmoves = findBlackMoves(board);
-//     for(pair<int,int> elem:bmoves)cout<<elem.first<<" "<<elem.second<<endl;
-//     vector<pair<int,int>> wmoves = findWhiteMoves(board);
-//     for(pair<int,int> elem:wmoves)cout<<elem.first<<" "<<elem.second<<endl;
-    
-
-    
-    
-    
-        
 return 0;}
